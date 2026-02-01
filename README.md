@@ -40,40 +40,40 @@ This project demonstrates the minimum viable execution controller that addresses
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         CLIENT REQUEST                               │
+│                         CLIENT REQUEST                              │
 └─────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                      EXECUTION CONTROLLER                           │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                     State Machine                            │   │
-│  │   CREATED → RUNNING → PAUSED → COMPLETED / KILLED / FAILED  │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                │                                     │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                     State Machine                           │    │
+│  │   CREATED → RUNNING → PAUSED → COMPLETED / KILLED / FAILED  │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                                │                                    │
 │         ┌──────────────────────┼──────────────────────┐             │
 │         ▼                      ▼                      ▼             │
-│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐         │
-│  │ Kill Switch │      │  Guardrails │      │ Event Store │         │
-│  │             │      │             │      │             │         │
-│  │ • Global    │      │ • Token     │      │ • Append    │         │
-│  │   stop      │      │   limits    │      │   only      │         │
-│  │ • Checked   │      │ • Cost      │      │ • Immutable │         │
-│  │   per step  │      │   limits    │      │ • Ordered   │         │
-│  └─────────────┘      └─────────────┘      └─────────────┘         │
-│                                                    │                 │
-│                                                    ▼                 │
-│                                           ┌─────────────┐           │
-│                                           │   Replay    │           │
-│                                           │             │           │
-│                                           │ Deterministic│           │
-│                                           │ reproduction │           │
-│                                           └─────────────┘           │
+│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐          │
+│  │ Kill Switch │      │  Guardrails │      │ Event Store │          │
+│  │             │      │             │      │             │          │
+│  │ • Global    │      │ • Token     │      │ • Append    │          │
+│  │   stop      │      │   limits    │      │   only      │          │
+│  │ • Checked   │      │ • Cost      │      │ • Immutable │          │
+│  │   per step  │      │   limits    │      │ • Ordered   │          │
+│  └─────────────┘      └─────────────┘      └─────────────┘          │
+│                                                    │                │
+│                                                    ▼                │
+│                                           ┌──────────────┐          │
+│                                           │   Replay     │          │
+│                                           │              │          │
+│                                           │ Deterministic│          │
+│                                           │ reproduction │          │
+│                                           └──────────────┘          │
 └─────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                       EXECUTION SUMMARY                              │
+│                       EXECUTION SUMMARY                             │
 │  Run ID • Final State • Steps • Cost • Duration • Termination       │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -191,6 +191,20 @@ The demo will:
 2. Execute steps until completion or failure
 3. Print an execution summary
 4. Replay all events
+
+### Example: Budget-Limited Execution in Practice
+
+![Demo output showing budget exceeded failure](./demo-output.png)
+
+The screenshot demonstrates a **budget exceeded failure**:
+
+1. **Run initialization** — Execution starts with a 400 token / $0.50 budget
+2. **Steps execute** — 5 steps complete successfully (50 tokens × 5 = 250 tokens, $0.10 × 5 = $0.50)
+3. **Budget exceeded** — Step 6 would exceed the $0.50 USD limit, triggering `BudgetExceededError`
+4. **Execution summary** — Shows final state `FAILED`, 5 steps executed, total cost $0.60 (includes the step that exceeded)
+5. **Event replay** — All 5 successful steps are logged with timestamps, step numbers, and costs
+
+This is exactly how production agent systems should behave: **fail fast, fail loudly, and leave an audit trail**.
 
 ---
 
