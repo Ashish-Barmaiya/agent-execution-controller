@@ -1,4 +1,4 @@
-import type { ExecutionRun } from "./types.ts";
+import type { ExecutionRun } from "./types.js";
 
 export function enforceLimits(run: ExecutionRun) {
   if (run.spent.tokens > run.budget.maxTokens) {
